@@ -1,0 +1,141 @@
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+export default function PlannerApp() {
+  const [formData, setFormData] = useState({
+    age: "",
+    height: "",
+    weight: "",
+    gender: "male",
+    activity: "medium",
+    goal: "maintain",
+  });
+  const [result, setResult] = useState(null);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const calculatePlan = () => {
+    const { age, height, weight, gender, activity, goal } = formData;
+    const h = parseFloat(height);
+    const w = parseFloat(weight);
+    const a = parseInt(age);
+    if (isNaN(h) || isNaN(w) || isNaN(a)) return;
+
+    const bmr = gender === "male"
+      ? 10 * w + 6.25 * h - 5 * a + 5
+      : 10 * w + 6.25 * h - 5 * a - 161;
+
+    const activityMap = {
+      low: 1.2,
+      medium: 1.55,
+      high: 1.9,
+    };
+
+    let tdee = bmr * activityMap[activity];
+
+    if (goal === "lose") tdee -= 500;
+    if (goal === "gain") tdee += 500;
+
+    const protein = w * 2.2;
+    const fat = w * 1;
+    const carbs = (tdee - protein * 4 - fat * 9) / 4;
+
+    const workoutPlan = [
+      { day: "週一", focus: "下半身推", movements: ["深蹲", "腿推", "弓箭步"] },
+      { day: "週二", focus: "上半身推", movements: ["平板臥推", "肩推", "伏地挺身"] },
+      { day: "週三", focus: "休息或有氧", movements: ["快走 30 分鐘", "伸展"] },
+      { day: "週四", focus: "下半身拉", movements: ["硬舉", "腿彎舉", "臀推"] },
+      { day: "週五", focus: "上半身拉", movements: ["引體向上", "划船", "二頭彎舉"] },
+      { day: "週六", focus: "核心 & 穩定度", movements: ["棒式", "俄羅斯轉體", "單腳橋式"] },
+      { day: "週日", focus: "休息", movements: [] },
+    ];
+
+    const mealSuggestions = [
+      {
+        meal: "早餐",
+        options: ["燕麥 + 雞蛋 + 香蕉", "吐司 + 起司 + 水煮蛋", "豆漿 + 番薯"]
+      },
+      {
+        meal: "午餐",
+        options: ["雞胸肉 + 糙米 + 青菜", "牛肉炒麵", "蔥爆豬肉飯"]
+      },
+      {
+        meal: "晚餐",
+        options: ["鮭魚 + 地瓜 + 菜", "雞腿 + 藜麥 + 沙拉", "豆腐鍋"]
+      }
+    ];
+
+    setResult({ tdee: Math.round(tdee), protein, fat, carbs, workoutPlan, mealSuggestions });
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">身體數據輸入與規劃建議</h1>
+      <Card>
+        <CardContent className="grid gap-2 pt-4">
+          <Input name="age" placeholder="年齡" onChange={handleChange} />
+          <Input name="height" placeholder="身高 (cm)" onChange={handleChange} />
+          <Input name="weight" placeholder="體重 (kg)" onChange={handleChange} />
+          <Tabs defaultValue="male" onValueChange={(v) => handleChange({ target: { name: "gender", value: v } })}>
+            <TabsList>
+              <TabsTrigger value="male">男性</TabsTrigger>
+              <TabsTrigger value="female">女性</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Tabs defaultValue="medium" onValueChange={(v) => handleChange({ target: { name: "activity", value: v } })}>
+            <TabsList>
+              <TabsTrigger value="low">低活動</TabsTrigger>
+              <TabsTrigger value="medium">中等活動</TabsTrigger>
+              <TabsTrigger value="high">高活動</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Tabs defaultValue="maintain" onValueChange={(v) => handleChange({ target: { name: "goal", value: v } })}>
+            <TabsList>
+              <TabsTrigger value="lose">減脂</TabsTrigger>
+              <TabsTrigger value="maintain">維持</TabsTrigger>
+              <TabsTrigger value="gain">增肌</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button onClick={calculatePlan}>產生建議</Button>
+        </CardContent>
+      </Card>
+
+      {result && (
+        <Card className="mt-4">
+          <CardContent className="pt-4">
+            <h2 className="text-xl font-semibold mb-2">建議攝取</h2>
+            <p>總熱量：{result.tdee} kcal</p>
+            <p>蛋白質：{Math.round(result.protein)} g</p>
+            <p>脂肪：{Math.round(result.fat)} g</p>
+            <p>碳水化合物：{Math.round(result.carbs)} g</p>
+
+            <h2 className="text-xl font-semibold mt-4 mb-2">訓練建議</h2>
+            {result.workoutPlan.map((day, idx) => (
+              <div key={idx} className="mb-2">
+                <p className="font-medium">{day.day} - {day.focus}</p>
+                <ul className="list-disc list-inside text-sm">
+                  {day.movements.map((m, i) => <li key={i}>{m}</li>)}
+                </ul>
+              </div>
+            ))}
+
+            <h2 className="text-xl font-semibold mt-4 mb-2">飲食建議</h2>
+            {result.mealSuggestions.map((meal, idx) => (
+              <div key={idx} className="mb-2">
+                <p className="font-medium">{meal.meal}</p>
+                <ul className="list-disc list-inside text-sm">
+                  {meal.options.map((o, i) => <li key={i}>{o}</li>)}
+                </ul>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
